@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 import streamlit as st
@@ -6,43 +7,78 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 
 
-# ---------------------------------------------------------
-# PAGE CONFIGURATION
-# ---------------------------------------------------------
+# =========================================================
+# PAGE CONFIG
+# =========================================================
 
 st.set_page_config(
     page_title="TerraPulse",
     page_icon="🌱",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 
-# ---------------------------------------------------------
-# LOAD ENVIRONMENT VARIABLES
-# ---------------------------------------------------------
+# =========================================================
+# CUSTOM CSS
+# =========================================================
+
+st.markdown(
+    """
+    <style>
+
+    .main-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+
+    .subtitle {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(128,128,128,0.25);
+        text-align: center;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 650;
+        margin-top: 1rem;
+        margin-bottom: 0.8rem;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# ENVIRONMENT
+# =========================================================
 
 load_dotenv()
 
 API_KEY = os.getenv("GEMINI_API_KEY")
 
-
-# ---------------------------------------------------------
-# GEMINI CONFIGURATION
-# ---------------------------------------------------------
-
 if API_KEY:
     genai.configure(api_key=API_KEY)
 
     model = genai.GenerativeModel(
-    model_name="gemini-3.8-flash"
-)
+        model_name="gemini-3.8-flash"
+    )
 else:
     model = None
 
 
-# ---------------------------------------------------------
-# LOAD SYSTEM PROMPT
-# ---------------------------------------------------------
+# =========================================================
+# SYSTEM PROMPT
+# =========================================================
 
 PROMPT_PATH = Path("prompts/system_prompt.txt")
 
@@ -56,30 +92,68 @@ else:
     """
 
 
-# ---------------------------------------------------------
+# =========================================================
 # HEADER
-# ---------------------------------------------------------
+# =========================================================
 
-st.title("🌱 TerraPulse")
+st.markdown(
+    '<div class="main-title">🌱 TerraPulse</div>',
+    unsafe_allow_html=True
+)
 
-st.subheader(
-    "AI-Powered Regenerative Agricultural Intelligence"
+st.markdown(
+    '<div class="subtitle">'
+    'AI-Powered Regenerative Agricultural Intelligence'
+    '</div>',
+    unsafe_allow_html=True
 )
 
 st.write(
-    "Analyze farm conditions and receive AI-assisted insights "
-    "for soil health, regenerative practices, water management "
-    "and climate-related risks."
+    "Transform farm data into practical insights for soil health, "
+    "regenerative practices, water management and climate resilience."
 )
 
 st.divider()
 
 
-# ---------------------------------------------------------
-# FARM INFORMATION
-# ---------------------------------------------------------
+# =========================================================
+# SIDEBAR
+# =========================================================
 
-st.header("🌾 Farm Information")
+with st.sidebar:
+
+    st.header("🌾 About TerraPulse")
+
+    st.write(
+        "TerraPulse uses Gemini-powered analysis to help farmers "
+        "understand field conditions and explore regenerative "
+        "agriculture practices."
+    )
+
+    st.divider()
+
+    st.caption("Hackathon Track")
+    st.write("**Track 4 — AgriN & Regenerative Agricultural Intelligence**")
+
+    st.caption("Team")
+    st.write("**TerraPulse**")
+
+    st.divider()
+
+    st.caption(
+        "AI-generated recommendations should be validated "
+        "with local agricultural experts and field conditions."
+    )
+
+
+# =========================================================
+# INPUT SECTION
+# =========================================================
+
+st.markdown(
+    '<div class="section-title">🌾 Farm Information</div>',
+    unsafe_allow_html=True
+)
 
 col1, col2 = st.columns(2)
 
@@ -148,7 +222,10 @@ with col2:
     )
 
 
-st.subheader("🌦️ Environmental Conditions")
+st.markdown(
+    '<div class="section-title">🌦️ Environmental Conditions</div>',
+    unsafe_allow_html=True
+)
 
 col3, col4, col5 = st.columns(3)
 
@@ -185,16 +262,20 @@ with col5:
 st.divider()
 
 
-# ---------------------------------------------------------
-# ANALYZE FARM
-# ---------------------------------------------------------
+# =========================================================
+# ANALYZE BUTTON
+# =========================================================
 
 analyze = st.button(
-    "🔍 Analyze Farm",
+    "🔍 Analyze Farm with TerraPulse AI",
     type="primary",
     use_container_width=True
 )
 
+
+# =========================================================
+# AI ANALYSIS
+# =========================================================
 
 if analyze:
 
@@ -202,12 +283,12 @@ if analyze:
 
         st.error(
             "Gemini API key not found. "
-            "Please add GEMINI_API_KEY to your .env file."
+            "Please configure GEMINI_API_KEY in your .env file."
         )
 
-    else:
+        st.stop()
 
-        farm_data = f"""
+    farm_data = f"""
 Crop: {crop}
 Location: {location}
 Current Farming Practice: {farming_practice}
@@ -222,60 +303,119 @@ Rainfall: {rainfall} mm
 Temperature: {temperature} °C
 """
 
-        prompt = f"""
+    prompt = f"""
 {SYSTEM_PROMPT}
 
-Analyze the following farm information:
+Analyze this farm:
 
 {farm_data}
 
-Return your response using these sections:
+Return the response using EXACTLY these sections:
 
-### 🌱 Soil Health Assessment
+SOIL HEALTH ASSESSMENT
 Give a concise assessment.
 
-### 📊 Farm Health Score
-Give a score from 0 to 100 and explain the main factors.
+FARM HEALTH SCORE
+Give one score from 0 to 100 and explain the main factors.
 
-### ⚠️ Key Risks
-Identify important soil, water or climate-related risks.
+KEY RISKS
+List the most important risks.
 
-### ♻️ Regenerative Recommendations
+REGENERATIVE RECOMMENDATIONS
 Give 3 to 5 practical regenerative agriculture practices.
 
-### 💧 Water Management
+WATER MANAGEMENT
 Give practical water-management guidance.
 
-### 🌾 Action Plan
-Give 3 prioritized actions the farmer can consider.
+ACTION PLAN
+Give 3 prioritized actions.
 
-### 🤖 Explanation
-Briefly explain how the provided data influenced your recommendations.
+EXPLANATION
+Explain how the provided data influenced the recommendations.
 
 Important:
 Do not claim certainty.
-These are AI-assisted recommendations and should be validated with
-local agricultural experts and field conditions.
+These are AI-assisted recommendations and should be validated
+with local agricultural experts and field conditions.
 """
 
-        with st.spinner("🌱 TerraPulse is analyzing the farm..."):
+    with st.spinner("🌱 TerraPulse AI is analyzing your farm..."):
 
-            try:
+        try:
 
-                response = model.generate_content(prompt)
+            response = model.generate_content(prompt)
 
-                st.success("Analysis completed!")
+            result = response.text
 
-                st.divider()
+            # -------------------------------------------------
+            # Extract health score
+            # -------------------------------------------------
 
-                st.header("🌱 TerraPulse AI Analysis")
+            score_match = re.search(
+                r"(?:Score|score)[^\d]*(\d{1,3})\s*(?:/|out of)?\s*100",
+                result
+            )
 
-                st.markdown(response.text)
+            score = None
 
-            except Exception as e:
+            if score_match:
+                score = int(score_match.group(1))
 
-                st.error(
-                    "Unable to generate the AI analysis."
-                )
+            # -------------------------------------------------
+            # Farm overview metrics
+            # -------------------------------------------------
 
-                st.code(str(e))
+            st.success("AI analysis completed successfully.")
+
+            st.markdown(
+                '<div class="section-title">📊 Farm Snapshot</div>',
+                unsafe_allow_html=True
+            )
+
+            metric1, metric2, metric3, metric4 = st.columns(4)
+
+            with metric1:
+                if score is not None:
+                    st.metric("Farm Health", f"{score}/100")
+                else:
+                    st.metric("Farm Health", "AI assessed")
+
+            with metric2:
+                st.metric("Soil pH", f"{soil_ph}")
+
+            with metric3:
+                st.metric("Moisture", f"{soil_moisture}%")
+
+            with metric4:
+                st.metric("Rainfall", f"{rainfall} mm")
+
+            st.divider()
+
+            # -------------------------------------------------
+            # AI RESULTS
+            # -------------------------------------------------
+
+            st.markdown(
+                '<div class="section-title">🤖 TerraPulse AI Analysis</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(result)
+
+        except Exception as e:
+
+            st.error("Unable to generate the AI analysis.")
+
+            st.code(str(e))
+
+
+# =========================================================
+# FOOTER
+# =========================================================
+
+st.divider()
+
+st.caption(
+    "TerraPulse • AI-powered regenerative agricultural intelligence • "
+    "Track 4"
+)
